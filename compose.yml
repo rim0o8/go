@@ -1,0 +1,51 @@
+name: nextjs-go-template
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NODE_ENV=development
+    networks:
+      - my_network
+
+  app:
+    container_name: api
+    build: ./backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    init: true
+    volumes:
+      - ./backend:/home/webapp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  postgres:
+    container_name: postgres
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: nextjs-go-template
+    volumes:
+      - ./data/db_data/volume:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5433"
+    command: -p 5433
+    networks:
+      - my_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d nextjs-go-template -p 5433"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+networks:
+  my_network:
